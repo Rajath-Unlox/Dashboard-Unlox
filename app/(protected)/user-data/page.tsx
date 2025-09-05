@@ -79,6 +79,7 @@ export default function Page() {
           batch: person.batch,
         }));
         setData(mapped);
+        console.log("Fetched users:", mapped);
       })
       .catch((err) => console.error("Error fetching users:", err));
   }, []);

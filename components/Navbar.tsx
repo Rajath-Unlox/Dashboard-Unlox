@@ -19,6 +19,42 @@ import { signOut } from "next-auth/react";
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refreshToken: localStorage.getItem("refreshToken"),
+        }),
+      });
+
+      // Clear client-side storage if needed
+      localStorage.removeItem("refreshToken");
+
+      // Only parse JSON if response has content
+      if (res.ok) {
+        const text = await res.text();
+        if (text) {
+          try {
+            const data = JSON.parse(text);
+            console.log("Logout response:", data);
+          } catch (err) {
+            console.warn("Response not JSON:", text);
+          }
+        }
+      }
+
+      // Clear NextAuth session
+      await signOut({ callbackUrl: "/login" });
+    } catch (err) {
+      console.error("Logout failed:", err);
+      // Fallback: still sign out locally
+      await signOut({ callbackUrl: "/login" });
+    }
+  };
+
   return (
     <nav
       className="flex p-4 items-center justify-between border-b-1 sticky top-0 bg-white dark:bg-accent z-9999"
@@ -34,7 +70,7 @@ const Navbar = () => {
               <span className="sr-only">Toggle theme</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="z-9999">
             <DropdownMenuItem onClick={() => setTheme("light")}>
               Light
             </DropdownMenuItem>
@@ -64,10 +100,7 @@ const Navbar = () => {
               <Settings className="h-[1.2rem] w-[1.2rem] mr-2" />
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => signOut({ callbackUrl: "/login" })}
-            >
+            <DropdownMenuItem variant="destructive" onClick={handleLogout}>
               <LogOut className="h-[1.2rem] w-[1.2rem] mr-2" />
               Logout
             </DropdownMenuItem>

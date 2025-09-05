@@ -149,7 +149,7 @@ export default function Page() {
   // Save edited record
   const handleSave = () => {
     if (!editingPerson) return;
-    fetch(`http://localhost:5000/api/users/${editingPerson.id}`, {
+    fetch(`http://localhost:5000/api/payments/${editingPerson.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editingPerson),
@@ -167,9 +167,9 @@ export default function Page() {
 
   // Delete record
   const handleDelete = (id: string) => {
-    fetch(`http://localhost:5000/api/users/${id}`, { method: "DELETE" }).then(
-      () => setData((prev) => prev.filter((p) => p.id !== id))
-    );
+    fetch(`http://localhost:5000/api/payments/${id}`, {
+      method: "DELETE",
+    }).then(() => setData((prev) => prev.filter((p) => p.id !== id)));
   };
 
   const confirmDelete = () => {
@@ -198,8 +198,8 @@ export default function Page() {
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageIndex: 1, 
-        pageSize: 5, 
+        pageIndex: 0,
+        pageSize: 100,
       },
     },
     getSortedRowModel: getSortedRowModel(),

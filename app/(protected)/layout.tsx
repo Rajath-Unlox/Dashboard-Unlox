@@ -6,8 +6,7 @@ import { AppSidebar } from "../../components/AppSidebar";
 import { ThemeProvider } from "../../components/Providers/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { cookies } from "next/headers";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 const geistSans = Geist({
@@ -27,15 +26,9 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    redirect("/login");
-  }
+}) {
 
   return (
     <main className="w-full">
@@ -48,7 +41,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider defaultOpen={defaultOpen}>
+          <SidebarProvider>
             <AppSidebar />
             <div className="w-full">
               <Navbar />
