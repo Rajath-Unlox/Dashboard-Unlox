@@ -51,7 +51,9 @@ type Person = {
 };
 
 export default function Page() {
-  const [data, setData] = React.useState<Person[]>([]);
+  const [data, setData] = React.useState<Person[]>([
+    
+  ]);
   const [columns, setColumns] = React.useState<ColumnDef<any>[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(

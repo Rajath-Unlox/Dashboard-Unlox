@@ -55,7 +55,40 @@ type Person = {
 };
 
 export default function Page() {
-  const [data, setData] = React.useState<Person[]>([]);
+  const [data, setData] = React.useState<Person[]>([
+    {
+      id: "one",
+      name: "Parthu",
+      email: "vaaa1@gmail.com",
+      contact: "94xxxxxx56x",
+      course: "Gen AI",
+      batch: "August 2025",
+    },
+    {
+      id: "two",
+      name: "Rajath",
+      email: "vaaa2@gmail.com",
+      contact: "94xxxxxx56x",
+      course: "Web Development",
+      batch: "August 2025",
+    },
+    {
+      id: "three",
+      name: "Jeevan",
+      email: "jshgdas@gmail.com",
+      contact: "94xxxxxx56x",
+      course: "App Development",
+      batch: "August 2025",
+    },
+    {
+      id: "four",
+      name: "Ram",
+      email: "mnxcbxc@gmail.com",
+      contact: "94xxxxxx56x",
+      course: "Data Science",
+      batch: "August 2025",
+    },
+  ]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
