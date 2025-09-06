@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardAction,
@@ -8,16 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MoreVertical } from "lucide-react";
-
-const users = [
-  { name: "John Doe", course: "Web Development", initials: "JD" },
-  { name: "Jane Smith", course: "UI/UX Design", initials: "JS" },
-  { name: "Mark Taylor", course: "Data Science", initials: "MT" },
-  { name: "Alice Johnson", course: "Machine Learning", initials: "AJ" },
-  { name: "Robert Brown", course: "Cybersecurity", initials: "RB" },
-  { name: "Emma Davis", course: "Blockchain", initials: "ED" },
-  { name: "Michael Lee", course: "Cloud Computing", initials: "ML" },
-];
 
 // Tailwind background colors
 const avatarColors = [
@@ -32,7 +24,7 @@ const avatarColors = [
 ];
 
 // Hash function to always pick the same color for same name
-const getColorForUser = (name: any) => {
+const getColorForUser = (name: string) => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -40,7 +32,18 @@ const getColorForUser = (name: any) => {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
-const UserRow = ({ initials, name, course }: any) => {
+interface User {
+  name: string;
+  course: string;
+  createdAt: string;
+}
+
+const UserRow = ({ name, course }: User) => {
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
   const colorClass = getColorForUser(name);
   return (
     <div className="flex items-center justify-between border p-4 rounded-lg transition">
@@ -60,6 +63,26 @@ const UserRow = ({ initials, name, course }: any) => {
 };
 
 const UserTable = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/users")
+      .then((res) => res.json())
+      .then((data) => {
+        // Sort by createdAt descending and take last 5 users
+        const sorted = data
+          .sort(
+            (a: User, b: User) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+          .slice(0, 5);
+        setUsers(sorted);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   return (
     <Card className="w-full mx-auto">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -73,9 +96,13 @@ const UserTable = () => {
       </CardHeader>
 
       <CardContent className="h-[300px] overflow-y-auto p-4 space-y-2">
-        {users.map((user, index) => (
-          <UserRow key={index} {...user} />
-        ))}
+        {loading ? (
+          <div>Loading...</div>
+        ) : users.length === 0 ? (
+          <div>No users found.</div>
+        ) : (
+          users.map((user, index) => <UserRow key={index} {...user} />)
+        )}
       </CardContent>
     </Card>
   );
