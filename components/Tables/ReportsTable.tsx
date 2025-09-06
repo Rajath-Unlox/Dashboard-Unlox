@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardAction,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { MoreVertical } from "lucide-react";
 
-type ReportStatus = "Resolved" | "Pending";
+type ReportStatus = "resolved" | "pending";
 
 interface Report {
   name: string;
@@ -17,31 +18,9 @@ interface Report {
   status: ReportStatus;
 }
 
-const reports: Report[] = [
-  { name: "John Doe", report: "Issue with course access", status: "Resolved" },
-  {
-    name: "Jane Smith",
-    report: "Unable to submit assignment",
-    status: "Pending",
-  },
-  { name: "Mark Taylor", report: "Payment not reflecting", status: "Resolved" },
-  {
-    name: "Alice Johnson",
-    report: "Broken link in Week 3 material",
-    status: "Pending",
-  },
-  {
-    name: "Robert Brown",
-    report: "Confusion about exam schedule",
-    status: "Pending",
-  },
-  { name: "Emma Davis", report: "Blockchain AI Issue", status: "Resolved" },
-  { name: "Michael Lee", report: "Cloud Computing Page not loading", status: "Resolved" },
-];
-
 const statusColors: Record<ReportStatus, string> = {
-  Resolved: "bg-green-100 text-green-700",
-  Pending: "bg-yellow-100 text-yellow-700",
+  resolved: "bg-green-100 text-green-700",
+  pending: "bg-yellow-100 text-yellow-700",
 };
 
 const ReportRow: React.FC<Report> = ({ name, report, status }) => {
@@ -54,18 +33,31 @@ const ReportRow: React.FC<Report> = ({ name, report, status }) => {
       <span
         className={`px-3 py-1 text-xs font-medium rounded-full ${statusColors[status]}`}
       >
-        {status}
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     </div>
   );
 };
 
 const ReportsTable: React.FC = () => {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/reports")
+      .then((res) => res.json())
+      .then((data) => {
+        setReports(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   return (
     <Card className="w-full mx-auto">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Reports</CardTitle>
+          <CardTitle>Recent Reports</CardTitle>
           <CardDescription>List of submitted issues</CardDescription>
         </div>
         <CardAction>
@@ -74,9 +66,17 @@ const ReportsTable: React.FC = () => {
       </CardHeader>
 
       <CardContent className="h-[300px] overflow-y-auto p-4 space-y-2">
-        {reports.map((report, index) => (
-          <ReportRow key={index} {...report} />
-        ))}
+        {loading ? (
+          <div>Loading...</div>
+        ) : reports.length === 0 ? (
+          <div>No reports found.</div>
+        ) : (
+          reports
+            .slice(-5) // take the last 5 items
+            .map((report, index) => (
+              <ReportRow key={index} {...report} />
+            ))
+        )}
       </CardContent>
     </Card>
   );

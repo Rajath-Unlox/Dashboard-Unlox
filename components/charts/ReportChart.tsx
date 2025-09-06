@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
-
 import {
   Card,
   CardContent,
@@ -23,42 +22,54 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// Example reports data with dates
-const allReportData = [
-  { date: "2025-08-01", resolved: 100, unresolved: 30 },
-  { date: "2025-08-02", resolved: 120, unresolved: 20 },
-  { date: "2025-08-03", resolved: 80, unresolved: 25 },
-  { date: "2025-08-04", resolved: 90, unresolved: 15 },
-  { date: "2025-08-05", resolved: 110, unresolved: 10 },
-];
-
 const chartConfig = {
   resolved: {
     label: "Resolved",
-    color: "#0373ff", // blue
+    color: "#0373ff",
   },
   unresolved: {
     label: "Unresolved",
-    color: "#bac9f7", // light blue
+    color: "#bac9f7",
   },
 } satisfies ChartConfig;
 
+interface Report {
+  status: "resolved" | "pending";
+  createdAt: string; // ISO date string
+}
+
 export function ReportsChart() {
+  const [reports, setReports] = useState<Report[]>([]);
   const [startDate, setStartDate] = useState("2025-08-01");
   const [endDate, setEndDate] = useState("2025-08-05");
+  const [loading, setLoading] = useState(true);
 
-  // Filter and aggregate reports within date range
-  const filteredData = useMemo(() => {
-    return allReportData.filter(
-      (item) => item.date >= startDate && item.date <= endDate
-    );
-  }, [startDate, endDate]);
+  useEffect(() => {
+    fetch("http://localhost:5000/api/reports")
+      .then((res) => res.json())
+      .then((data) => {
+        setReports(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  // Filter reports by date range
+  const filteredReports = useMemo(() => {
+    return reports.filter((report) => {
+      const date = report.createdAt?.slice(0, 10);
+      return date >= startDate && date <= endDate;
+    });
+  }, [reports, startDate, endDate]);
+
+
+  // Aggregate counts
 
   const aggregatedData = useMemo(() => {
-    const resolved = filteredData.reduce((sum, d) => sum + d.resolved, 0);
-    const unresolved = filteredData.reduce((sum, d) => sum + d.unresolved, 0);
+    const resolved = filteredReports.filter((r) => r.status === "resolved").length;
+    const unresolved = filteredReports.filter((r) => r.status === "pending").length;
     return { resolved, unresolved, total: resolved + unresolved };
-  }, [filteredData]);
+  }, [filteredReports]);
 
   const chartData = [
     {
@@ -75,15 +86,12 @@ export function ReportsChart() {
           <CardTitle>Reports</CardTitle>
           <CardDescription>Resolved & Unresolved</CardDescription>
         </div>
-
-        {/* Date filters */}
         <Popover>
           <PopoverTrigger asChild>
             <button className="p-2 border rounded hover:bg-gray-100 flex items-center">
               <CalendarIcon className="h-4 w-4" />
             </button>
           </PopoverTrigger>
-
           <PopoverContent className="w-auto p-3 space-y-2">
             <div className="flex gap-2 flex-col">
               <div className="flex gap-1 items-center justify-between">
@@ -108,64 +116,67 @@ export function ReportsChart() {
           </PopoverContent>
         </Popover>
       </CardHeader>
-
       <CardContent className="flex flex-1 items-center pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square w-full max-w-[200px]"
-        >
-          <RadialBarChart
-            data={chartData}
-            endAngle={180}
-            innerRadius={80}
-            outerRadius={130}
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square w-full max-w-[200px]"
           >
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) - 16}
-                          className="fill-foreground text-2xl font-bold"
-                        >
-                          {aggregatedData.total.toLocaleString()}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 4}
-                          className="fill-muted-foreground"
-                        >
-                          Reports
-                        </tspan>
-                      </text>
-                    );
-                  }
-                }}
+            <RadialBarChart
+              data={chartData}
+              endAngle={180}
+              innerRadius={80}
+              outerRadius={130}
+            >
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent hideLabel />}
               />
-            </PolarRadiusAxis>
-            <RadialBar
-              dataKey="resolved"
-              stackId="a"
-              cornerRadius={5}
-              fill="#0373ff"
-              className="stroke-transparent stroke-2"
-            />
-            <RadialBar
-              dataKey="unresolved"
-              stackId="a"
-              cornerRadius={5}
-              fill="#bac9f7"
-              className="stroke-transparent stroke-2"
-            />
-          </RadialBarChart>
-        </ChartContainer>
+              <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) - 16}
+                            className="fill-foreground text-2xl font-bold"
+                          >
+                            {aggregatedData.total.toLocaleString()}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) + 4}
+                            className="fill-muted-foreground"
+                          >
+                            Reports
+                          </tspan>
+                        </text>
+                      );
+                    }
+                  }}
+                />
+              </PolarRadiusAxis>
+              <RadialBar
+                dataKey="resolved"
+                stackId="a"
+                cornerRadius={5}
+                fill="#0373ff"
+                className="stroke-transparent stroke-2"
+              />
+              <RadialBar
+                dataKey="unresolved"
+                stackId="a"
+                cornerRadius={5}
+                fill="#bac9f7"
+                className="stroke-transparent stroke-2"
+              />
+            </RadialBarChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );
