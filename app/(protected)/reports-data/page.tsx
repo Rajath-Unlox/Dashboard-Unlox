@@ -59,6 +59,13 @@ export default function Page() {
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [editingReport, setEditingReport] = React.useState<Report | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [newReport, setNewReport] = React.useState<Omit<Report, 'id'>>({
+    name: '',
+    status: 'pending',
+    email: '',
+    report: ''
+  });
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [selectedPersonId, setSelectedPersonId] = React.useState<string | null>(
@@ -93,6 +100,21 @@ export default function Page() {
       });
   };
 
+  const handleAddReport = () => {
+    fetch('http://localhost:5000/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReport),
+    })
+      .then((res) => res.json())
+      .then((created) => {
+        setData((prev) => [...prev, created]);
+        setIsAddDialogOpen(false);
+        setNewReport({ name: '', status: 'pending', email: '', report: '' });
+      })
+      .catch((err) => console.error('Error adding report:', err));
+  };
+
   const handleDelete = (id: string) => {
     fetch(`http://localhost:5000/api/reports/${id}`, { method: "DELETE" }).then(
       () => setData((prev) => prev.filter((r) => r.id !== id))
@@ -110,11 +132,10 @@ export default function Page() {
       header: "Status",
       cell: ({ row }) => (
         <div
-          className={`capitalize font-medium rounded-full flex items-center justify-center py-1 ${
-            row.getValue("status") === "resolved"
+          className={`capitalize font-medium rounded-full flex items-center justify-center py-1 ${row.getValue("status") === "resolved"
               ? "text-green-600 bg-green-100"
               : "text-yellow-600 bg-yellow-100"
-          }`}
+            }`}
         >
           {row.getValue("status")}
         </div>
@@ -213,28 +234,38 @@ export default function Page() {
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+        <div className="ml-auto flex items-center space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsAddDialogOpen(true)}
+          >
+            Add Report
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Table */}
@@ -248,9 +279,9 @@ export default function Page() {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -351,13 +382,12 @@ export default function Page() {
                       <Button
                         key={statusOption}
                         variant={isSelected ? "default" : "outline"}
-                        className={`capitalize ${
-                          isSelected
+                        className={`capitalize ${isSelected
                             ? statusOption === "resolved"
                               ? "text-green-600 bg-green-100"
                               : "text-yellow-600 bg-yellow-100"
                             : "text-gray-800 bg-white border"
-                        }`}
+                          }`}
                         onClick={() =>
                           setEditingReport({
                             ...editingReport,
@@ -417,6 +447,94 @@ export default function Page() {
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Report Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Report</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="mb-2 block">Name</Label>
+              <Input
+                value={newReport.name}
+                onChange={(e) =>
+                  setNewReport({ ...newReport, name: e.target.value })
+                }
+                placeholder="Enter name"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Email</Label>
+              <Input
+                value={newReport.email}
+                onChange={(e) =>
+                  setNewReport({ ...newReport, email: e.target.value })
+                }
+                placeholder="Enter email"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Status</Label>
+              <div className="flex gap-2 mt-1">
+                {["resolved", "pending"].map((statusOption) => {
+                  const isSelected = newReport.status === statusOption;
+                  return (
+                    <Button
+                      key={statusOption}
+                      variant={isSelected ? "default" : "outline"}
+                      className={`capitalize ${isSelected
+                          ? statusOption === "resolved"
+                            ? "text-green-600 bg-green-100"
+                            : "text-yellow-600 bg-yellow-100"
+                          : "text-gray-800 bg-white border"
+                        }`}
+                      onClick={() =>
+                        setNewReport({
+                          ...newReport,
+                          status: statusOption as "resolved" | "pending",
+                        })
+                      }
+                    >
+                      {statusOption}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <Label className="mb-2 block">Report</Label>
+              <Input
+                value={newReport.report}
+                onChange={(e) =>
+                  setNewReport({ ...newReport, report: e.target.value })
+                }
+                placeholder="Enter report description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddDialogOpen(false);
+                setNewReport({ name: '', status: 'pending', email: '', report: '' });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddReport}
+              disabled={
+                !newReport.name.trim() ||
+                !newReport.email.trim() ||
+                !newReport.report.trim()
+              }>
+              Add Report
             </Button>
           </DialogFooter>
         </DialogContent>

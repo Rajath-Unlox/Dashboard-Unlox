@@ -72,7 +72,8 @@ const ReportsTable: React.FC = () => {
           <div>No reports found.</div>
         ) : (
           reports
-            .slice(-5) // take the last 5 items
+            .slice(-5) 
+            .reverse()
             .map((report, index) => (
               <ReportRow key={index} {...report} />
             ))

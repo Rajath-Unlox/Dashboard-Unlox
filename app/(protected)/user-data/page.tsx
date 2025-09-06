@@ -91,6 +91,14 @@ export default function Page() {
 
   const [editingPerson, setEditingPerson] = React.useState<Person | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [newPerson, setNewPerson] = React.useState<Omit<Person, 'id'>>({
+    name: '',
+    email: '',
+    contact: '',
+    course: '',
+    batch: ''
+  });
 
   const handleSave = () => {
     if (!editingPerson) return;
@@ -108,6 +116,23 @@ export default function Page() {
         );
         setIsEditDialogOpen(false);
       });
+  };
+
+
+  const handleAddUser = () => {
+
+    fetch('http://localhost:5000/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newPerson),
+    })
+      .then((res) => res.json())
+      .then((created) => {
+        setData((prev) => [...prev, { ...created, id: created._id }]);
+        setIsAddDialogOpen(false);
+        setNewPerson({ name: '', email: '', contact: '', course: '', batch: '' });
+      })
+      .catch((err) => console.error('Error adding user:', err));
   };
 
   const handleDelete = (id: string) => {
@@ -263,28 +288,37 @@ export default function Page() {
           className="max-w-sm"
         />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="ml-auto flex items-center space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsAddDialogOpen(true)}
+          >
+            Add User
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Table */}
@@ -298,9 +332,9 @@ export default function Page() {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -458,6 +492,89 @@ export default function Page() {
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add user dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="mb-2 block">Name</Label>
+              <Input
+                value={newPerson.name}
+                onChange={(e) =>
+                  setNewPerson({ ...newPerson, name: e.target.value })
+                }
+                placeholder="Enter name"
+                required={true}
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Email</Label>
+              <Input
+                value={newPerson.email}
+                onChange={(e) =>
+                  setNewPerson({ ...newPerson, email: e.target.value })
+                }
+                placeholder="Enter email"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Phone</Label>
+              <Input
+                value={newPerson.contact}
+                onChange={(e) =>
+                  setNewPerson({ ...newPerson, contact: e.target.value })
+                }
+                placeholder="Enter phone number"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Course</Label>
+              <Input
+                value={newPerson.course}
+                onChange={(e) =>
+                  setNewPerson({ ...newPerson, course: e.target.value })
+                }
+                placeholder="Enter course"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Batch</Label>
+              <Input
+                value={newPerson.batch}
+                onChange={(e) =>
+                  setNewPerson({ ...newPerson, batch: e.target.value })
+                }
+                placeholder="Enter batch (e.g., August 2025)"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddDialogOpen(false);
+                setNewPerson({ name: '', email: '', contact: '', course: '', batch: '' });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddUser}
+              disabled={
+                !newPerson.name.trim() ||
+                !newPerson.email.trim() ||
+                !newPerson.contact.trim() ||
+                !newPerson.course.trim() ||
+                !newPerson.batch.trim()
+              }>
+              Add User
             </Button>
           </DialogFooter>
         </DialogContent>
