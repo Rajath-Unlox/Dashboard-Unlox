@@ -15,43 +15,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { signOut } from "next-auth/react";
+import { useAuth } from "./Providers/AuthProvider";
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          refreshToken: localStorage.getItem("refreshToken"),
-        }),
-      });
-
-      // Clear client-side storage if needed
-      localStorage.removeItem("refreshToken");
-
-      // Only parse JSON if response has content
-      if (res.ok) {
-        const text = await res.text();
-        if (text) {
-          try {
-            const data = JSON.parse(text);
-            console.log("Logout response:", data);
-          } catch (err) {
-            console.warn("Response not JSON:", text);
-          }
-        }
-      }
-
-      // Clear NextAuth session
-      await signOut({ callbackUrl: "/login" });
+      await logout();
     } catch (err) {
       console.error("Logout failed:", err);
-      // Fallback: still sign out locally
-      await signOut({ callbackUrl: "/login" });
     }
   };
 

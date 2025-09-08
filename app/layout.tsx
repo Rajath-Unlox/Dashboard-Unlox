@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/Providers/theme-provider";
+import { AuthProvider } from "../components/Providers/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,9 +35,11 @@ export default function PublicLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex justify-center items-center w-full h-full">
-            {children}
-          </div>
+          <AuthProvider>
+            <div className="flex justify-center items-center w-full h-full">
+              {children}
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

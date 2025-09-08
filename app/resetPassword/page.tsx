@@ -72,7 +72,7 @@ const ResetPasswordPage = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ org_email:email }),
+          body: JSON.stringify({ email: email }),
         }
       );
 

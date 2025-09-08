@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/Providers/AuthProvider";
 
 const LoginPage = () => {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,35 +17,12 @@ async function handleSubmit(e: any) {
   setLoading(true);
 
   try {
-    const res = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ org_email: email, password }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
-      }
-      if (data.accessToken) {
-        localStorage.setItem("accessToken", data.accessToken);
-      }
-
+    const success = await login(email, password);
+    
+    if (success) {
       router.push("/");
     } else {
-      let errorMessage = "An unknown error occurred. Please try again.";
-      try {
-        const errorData = await res.json();
-        errorMessage =
-          errorData.message || "Invalid credentials. Please try again.";
-      } catch (jsonError) {
-        const textResponse = await res.text();
-        errorMessage = textResponse || "An unexpected error occurred.";
-      }
-      setError(errorMessage);
+      setError("Invalid credentials. Please try again.");
     }
   } catch (err) {
     console.error("Login failed:", err);
