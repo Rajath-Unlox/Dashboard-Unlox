@@ -14,7 +14,6 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -44,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import PageLoaderWrapper from "@/components/PageLoaderWrapper";
 
 type Person = {
   id: string;
@@ -60,6 +60,7 @@ export default function Page() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
+  const [loading, setLoading] = React.useState(true);
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -81,7 +82,8 @@ export default function Page() {
         setData(mapped);
         console.log("Fetched users:", mapped);
       })
-      .catch((err) => console.error("Error fetching users:", err));
+      .catch((err) => console.error("Error fetching users:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
@@ -278,307 +280,309 @@ export default function Page() {
   });
 
   return (
-    <div className="w-full">
-      {/* Search & Columns */}
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Search..."
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
+    <PageLoaderWrapper loading={loading}>
+      <div className="w-full">
+        {/* Search & Columns */}
+        <div className="flex items-center py-4">
+          <Input
+            placeholder="Search..."
+            value={globalFilter ?? ""}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="max-w-sm"
+          />
 
-        <div className="ml-auto flex items-center space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsAddDialogOpen(true)}
-          >
-            Add User
-          </Button>
+          <div className="ml-auto flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              Add User
+            </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+        {/* Table */}
+        <div className="overflow-hidden rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id}>
+                  {hg.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        {/* <div className="text-muted-foreground flex-1 text-sm">
+        {/* Pagination */}
+        <div className="flex items-center justify-end space-x-2 py-4">
+          {/* <div className="text-muted-foreground flex-1 text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div> */}
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Person</DialogTitle>
-          </DialogHeader>
-          {editingPerson && (
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Person</DialogTitle>
+            </DialogHeader>
+            {editingPerson && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    value={editingPerson.name}
+                    onChange={(e) =>
+                      setEditingPerson({ ...editingPerson, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input
+                    value={editingPerson.email}
+                    onChange={(e) =>
+                      setEditingPerson({
+                        ...editingPerson,
+                        email: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Phone</Label>
+                  <Input
+                    value={editingPerson.contact}
+                    onChange={(e) =>
+                      setEditingPerson({
+                        ...editingPerson,
+                        contact: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Course</Label>
+                  <Input
+                    value={editingPerson.course}
+                    onChange={(e) =>
+                      setEditingPerson({
+                        ...editingPerson,
+                        course: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Batch</Label>
+                  <Input
+                    value={editingPerson.batch}
+                    onChange={(e) =>
+                      setEditingPerson({
+                        ...editingPerson,
+                        batch: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Delete</DialogTitle>
+            </DialogHeader>
+            <p>
+              Are you sure you want to delete this person? This action cannot be
+              undone.
+            </p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add user dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New User</DialogTitle>
+            </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Name</Label>
+                <Label className="mb-2 block">Name</Label>
                 <Input
-                  value={editingPerson.name}
+                  value={newPerson.name}
                   onChange={(e) =>
-                    setEditingPerson({ ...editingPerson, name: e.target.value })
+                    setNewPerson({ ...newPerson, name: e.target.value })
                   }
+                  placeholder="Enter name"
+                  required={true}
                 />
               </div>
               <div>
-                <Label>Email</Label>
+                <Label className="mb-2 block">Email</Label>
                 <Input
-                  value={editingPerson.email}
+                  value={newPerson.email}
                   onChange={(e) =>
-                    setEditingPerson({
-                      ...editingPerson,
-                      email: e.target.value,
-                    })
+                    setNewPerson({ ...newPerson, email: e.target.value })
                   }
+                  placeholder="Enter email"
                 />
               </div>
               <div>
-                <Label>Phone</Label>
+                <Label className="mb-2 block">Phone</Label>
                 <Input
-                  value={editingPerson.contact}
+                  value={newPerson.contact}
                   onChange={(e) =>
-                    setEditingPerson({
-                      ...editingPerson,
-                      contact: e.target.value,
-                    })
+                    setNewPerson({ ...newPerson, contact: e.target.value })
                   }
+                  placeholder="Enter phone number"
                 />
               </div>
               <div>
-                <Label>Course</Label>
+                <Label className="mb-2 block">Course</Label>
                 <Input
-                  value={editingPerson.course}
+                  value={newPerson.course}
                   onChange={(e) =>
-                    setEditingPerson({
-                      ...editingPerson,
-                      course: e.target.value,
-                    })
+                    setNewPerson({ ...newPerson, course: e.target.value })
                   }
+                  placeholder="Enter course"
                 />
               </div>
               <div>
-                <Label>Batch</Label>
+                <Label className="mb-2 block">Batch</Label>
                 <Input
-                  value={editingPerson.batch}
+                  value={newPerson.batch}
                   onChange={(e) =>
-                    setEditingPerson({
-                      ...editingPerson,
-                      batch: e.target.value,
-                    })
+                    setNewPerson({ ...newPerson, batch: e.target.value })
                   }
+                  placeholder="Enter batch (e.g., August 2025)"
                 />
               </div>
             </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-          </DialogHeader>
-          <p>
-            Are you sure you want to delete this person? This action cannot be
-            undone.
-          </p>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add user dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="mb-2 block">Name</Label>
-              <Input
-                value={newPerson.name}
-                onChange={(e) =>
-                  setNewPerson({ ...newPerson, name: e.target.value })
-                }
-                placeholder="Enter name"
-                required={true}
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block">Email</Label>
-              <Input
-                value={newPerson.email}
-                onChange={(e) =>
-                  setNewPerson({ ...newPerson, email: e.target.value })
-                }
-                placeholder="Enter email"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block">Phone</Label>
-              <Input
-                value={newPerson.contact}
-                onChange={(e) =>
-                  setNewPerson({ ...newPerson, contact: e.target.value })
-                }
-                placeholder="Enter phone number"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block">Course</Label>
-              <Input
-                value={newPerson.course}
-                onChange={(e) =>
-                  setNewPerson({ ...newPerson, course: e.target.value })
-                }
-                placeholder="Enter course"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block">Batch</Label>
-              <Input
-                value={newPerson.batch}
-                onChange={(e) =>
-                  setNewPerson({ ...newPerson, batch: e.target.value })
-                }
-                placeholder="Enter batch (e.g., August 2025)"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsAddDialogOpen(false);
-                setNewPerson({ name: '', email: '', contact: '', course: '', batch: '' });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleAddUser}
-              disabled={
-                !newPerson.name.trim() ||
-                !newPerson.email.trim() ||
-                !newPerson.contact.trim() ||
-                !newPerson.course.trim() ||
-                !newPerson.batch.trim()
-              }>
-              Add User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAddDialogOpen(false);
+                  setNewPerson({ name: '', email: '', contact: '', course: '', batch: '' });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleAddUser}
+                disabled={
+                  !newPerson.name.trim() ||
+                  !newPerson.email.trim() ||
+                  !newPerson.contact.trim() ||
+                  !newPerson.course.trim() ||
+                  !newPerson.batch.trim()
+                }>
+                Add User
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </PageLoaderWrapper>
   );
 }

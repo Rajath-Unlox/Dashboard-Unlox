@@ -71,6 +71,7 @@ export default function Page() {
 
   const [editingPerson, setEditingPerson] = React.useState<Person | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
   // Fetch users & generate dynamic columns
   React.useEffect(() => {
@@ -145,7 +146,8 @@ export default function Page() {
 
         setData(mapped);
       })
-      .catch((err) => console.error("Error fetching users:", err));
+      .catch((err) => console.error("Error fetching users:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   // Save edited record

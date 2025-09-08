@@ -8,6 +8,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import PageLoaderWrapper from "@/components/PageLoaderWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,10 +43,13 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <SidebarProvider>
+            
             <AppSidebar />
             <div className="w-full">
               <Navbar />
-              <div className="px-4 w-full">{children}</div>
+              
+                <div className="px-4 w-full">{children}</div>
+              
             </div>
           </SidebarProvider>
         </ThemeProvider>

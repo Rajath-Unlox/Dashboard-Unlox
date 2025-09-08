@@ -41,6 +41,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import PageLoaderWrapper from "@/components/PageLoaderWrapper";
 
 export type Report = {
   id: string;
@@ -60,6 +61,7 @@ export default function Page() {
   const [editingReport, setEditingReport] = React.useState<Report | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [newReport, setNewReport] = React.useState<Omit<Report, 'id'>>({
     name: '',
     status: 'pending',
@@ -83,7 +85,8 @@ export default function Page() {
     fetch("http://localhost:5000/api/reports")
       .then((res) => res.json())
       .then((data) => setData(data))
-      .catch((err) => console.error("Error fetching reports:", err));
+      .catch((err) => console.error("Error fetching reports:", err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const handleSave = () => {
@@ -133,8 +136,8 @@ export default function Page() {
       cell: ({ row }) => (
         <div
           className={`capitalize font-medium rounded-full flex items-center justify-center py-1 ${row.getValue("status") === "resolved"
-              ? "text-green-600 bg-green-100"
-              : "text-yellow-600 bg-yellow-100"
+            ? "text-green-600 bg-green-100"
+            : "text-yellow-600 bg-yellow-100"
             }`}
         >
           {row.getValue("status")}
@@ -225,172 +228,279 @@ export default function Page() {
   });
 
   return (
-    <div className="w-full">
-      {/* Filters & Column Toggle */}
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Search..."
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
+    <PageLoaderWrapper loading={isLoading}>
+      <div className="w-full">
+        {/* Filters & Column Toggle */}
+        <div className="flex items-center py-4">
+          <Input
+            placeholder="Search..."
+            value={globalFilter ?? ""}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="max-w-sm"
+          />
 
-        <div className="ml-auto flex items-center space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsAddDialogOpen(true)}
-          >
-            Add Report
-          </Button>
+          <div className="ml-auto flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              Add Report
+            </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+        {/* Table */}
+        <div className="overflow-hidden rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        {/* <div className="text-muted-foreground flex-1 text-sm">
+        {/* Pagination */}
+        <div className="flex items-center justify-end space-x-2 py-4">
+          {/* <div className="text-muted-foreground flex-1 text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div> */}
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Report</DialogTitle>
-          </DialogHeader>
-          {editingReport && (
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Report</DialogTitle>
+            </DialogHeader>
+            {editingReport && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    value={editingReport.name}
+                    onChange={(e) =>
+                      setEditingReport({ ...editingReport, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input
+                    value={editingReport.email}
+                    onChange={(e) =>
+                      setEditingReport({
+                        ...editingReport,
+                        email: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <div className="flex gap-2 mt-1">
+                    {["resolved", "pending"].map((statusOption) => {
+                      const isSelected = editingReport.status === statusOption;
+                      return (
+                        <Button
+                          key={statusOption}
+                          variant={isSelected ? "default" : "outline"}
+                          className={`capitalize ${isSelected
+                            ? statusOption === "resolved"
+                              ? "text-green-600 bg-green-100"
+                              : "text-yellow-600 bg-yellow-100"
+                            : "text-gray-800 bg-white border"
+                            }`}
+                          onClick={() =>
+                            setEditingReport({
+                              ...editingReport,
+                              status: statusOption as "resolved" | "pending",
+                            })
+                          }
+                        >
+                          {statusOption}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Report</Label>
+                  <Input
+                    value={editingReport.report}
+                    onChange={(e) =>
+                      setEditingReport({
+                        ...editingReport,
+                        report: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/*delete dialogue*/}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Delete</DialogTitle>
+            </DialogHeader>
+            <p>
+              Are you sure you want to delete this Report? This action cannot be
+              undone.
+            </p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Report Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Report</DialogTitle>
+            </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Name</Label>
+                <Label className="mb-2 block">Name</Label>
                 <Input
-                  value={editingReport.name}
+                  value={newReport.name}
                   onChange={(e) =>
-                    setEditingReport({ ...editingReport, name: e.target.value })
+                    setNewReport({ ...newReport, name: e.target.value })
                   }
+                  placeholder="Enter name"
                 />
               </div>
               <div>
-                <Label>Email</Label>
+                <Label className="mb-2 block">Email</Label>
                 <Input
-                  value={editingReport.email}
+                  value={newReport.email}
                   onChange={(e) =>
-                    setEditingReport({
-                      ...editingReport,
-                      email: e.target.value,
-                    })
+                    setNewReport({ ...newReport, email: e.target.value })
                   }
+                  placeholder="Enter email"
                 />
               </div>
               <div>
-                <Label>Status</Label>
+                <Label className="mb-2 block">Status</Label>
                 <div className="flex gap-2 mt-1">
                   {["resolved", "pending"].map((statusOption) => {
-                    const isSelected = editingReport.status === statusOption;
+                    const isSelected = newReport.status === statusOption;
                     return (
                       <Button
                         key={statusOption}
                         variant={isSelected ? "default" : "outline"}
                         className={`capitalize ${isSelected
-                            ? statusOption === "resolved"
-                              ? "text-green-600 bg-green-100"
-                              : "text-yellow-600 bg-yellow-100"
-                            : "text-gray-800 bg-white border"
+                          ? statusOption === "resolved"
+                            ? "text-green-600 bg-green-100"
+                            : "text-yellow-600 bg-yellow-100"
+                          : "text-gray-800 bg-white border"
                           }`}
                         onClick={() =>
-                          setEditingReport({
-                            ...editingReport,
+                          setNewReport({
+                            ...newReport,
                             status: statusOption as "resolved" | "pending",
                           })
                         }
@@ -401,144 +511,39 @@ export default function Page() {
                   })}
                 </div>
               </div>
-
               <div>
-                <Label>Report</Label>
+                <Label className="mb-2 block">Report</Label>
                 <Input
-                  value={editingReport.report}
+                  value={newReport.report}
                   onChange={(e) =>
-                    setEditingReport({
-                      ...editingReport,
-                      report: e.target.value,
-                    })
+                    setNewReport({ ...newReport, report: e.target.value })
                   }
+                  placeholder="Enter report description"
                 />
               </div>
             </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/*delete dialogue*/}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-          </DialogHeader>
-          <p>
-            Are you sure you want to delete this Report? This action cannot be
-            undone.
-          </p>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Report Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Report</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="mb-2 block">Name</Label>
-              <Input
-                value={newReport.name}
-                onChange={(e) =>
-                  setNewReport({ ...newReport, name: e.target.value })
-                }
-                placeholder="Enter name"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block">Email</Label>
-              <Input
-                value={newReport.email}
-                onChange={(e) =>
-                  setNewReport({ ...newReport, email: e.target.value })
-                }
-                placeholder="Enter email"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block">Status</Label>
-              <div className="flex gap-2 mt-1">
-                {["resolved", "pending"].map((statusOption) => {
-                  const isSelected = newReport.status === statusOption;
-                  return (
-                    <Button
-                      key={statusOption}
-                      variant={isSelected ? "default" : "outline"}
-                      className={`capitalize ${isSelected
-                          ? statusOption === "resolved"
-                            ? "text-green-600 bg-green-100"
-                            : "text-yellow-600 bg-yellow-100"
-                          : "text-gray-800 bg-white border"
-                        }`}
-                      onClick={() =>
-                        setNewReport({
-                          ...newReport,
-                          status: statusOption as "resolved" | "pending",
-                        })
-                      }
-                    >
-                      {statusOption}
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-            <div>
-              <Label className="mb-2 block">Report</Label>
-              <Input
-                value={newReport.report}
-                onChange={(e) =>
-                  setNewReport({ ...newReport, report: e.target.value })
-                }
-                placeholder="Enter report description"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsAddDialogOpen(false);
-                setNewReport({ name: '', status: 'pending', email: '', report: '' });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleAddReport}
-              disabled={
-                !newReport.name.trim() ||
-                !newReport.email.trim() ||
-                !newReport.report.trim()
-              }>
-              Add Report
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAddDialogOpen(false);
+                  setNewReport({ name: '', status: 'pending', email: '', report: '' });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleAddReport}
+                disabled={
+                  !newReport.name.trim() ||
+                  !newReport.email.trim() ||
+                  !newReport.report.trim()
+                }>
+                Add Report
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </PageLoaderWrapper>
   );
 }
