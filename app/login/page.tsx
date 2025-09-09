@@ -93,18 +93,10 @@ async function handleSubmit(e: any) {
         </form>
         <div className="mt-6 text-center">
           <a
-            href="/forgotPassword"
-            className="text-sm font-medium text-blue-600 hover:underline"
-          >
-            Forgot Password?
-          </a>
-        </div>
-        <div className="mt-4 text-center">
-          <a
             href="/resetPassword"
             className="text-sm font-medium text-blue-600 hover:underline"
           >
-            Reset Password
+            Forgot Password?
           </a>
         </div>
       </div>

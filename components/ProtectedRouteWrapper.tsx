@@ -32,22 +32,9 @@ const ProtectedRouteWrapper: React.FC<ProtectedRouteWrapperProps> = ({ children 
     }
   }, [loading, isAuthenticated, router]);
 
-  // Show loading spinner while checking authentication
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // If not authenticated, show loading (will redirect)
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-      </div>
-    );
+  // Show loading while checking authentication or redirecting
+  if (loading || !isAuthenticated) {
+    return <PageLoaderWrapper loading={true}><div /></PageLoaderWrapper>;
   }
 
   // If authenticated, render the protected content
