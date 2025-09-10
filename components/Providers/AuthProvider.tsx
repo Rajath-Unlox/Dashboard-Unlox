@@ -9,12 +9,13 @@ interface User {
   org_email: string;
   org_phone_number: string;
   waiting: boolean;
+  role: "admin" | "employee";
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, role: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
   isAuthenticated: boolean;
@@ -91,19 +92,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, role: string): Promise<boolean> => {
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: email, password }),
+        body: JSON.stringify({ email: email, password, role }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Store tokens
         if (data.accessToken) {
           localStorage.setItem('accessToken', data.accessToken);
@@ -117,6 +118,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Set user data
         setUser(data.user);
+
+        if (data.user.role === 'admin') {
+          router.push('/');
+        } else {
+          router.push('/employee-dashboard');
+        }
         return true;
       }
       return false;
@@ -129,7 +136,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async (): Promise<void> => {
     try {
       const refreshTokenValue = localStorage.getItem('refreshToken');
-      
+
       if (refreshTokenValue) {
         await fetch('http://localhost:5000/api/auth/logout', {
           method: 'POST',
@@ -153,7 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshToken = async (): Promise<boolean> => {
     try {
       const refreshTokenValue = localStorage.getItem('refreshToken');
-      
+
       if (!refreshTokenValue) {
         return false;
       }
@@ -168,16 +175,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Update tokens
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
-        
+
         // Get updated user info
         await checkAuthStatus();
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Token refresh failed:', error);

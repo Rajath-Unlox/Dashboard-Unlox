@@ -8,6 +8,7 @@ const LoginPage = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("admin"); // Default role
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,10 +18,8 @@ async function handleSubmit(e: any) {
   setLoading(true);
 
   try {
-    const success = await login(email, password);
-    
+    const success = await login(email, password, role );
     if (success) {
-      router.push("/");
     } else {
       setError("Invalid credentials. Please try again.");
     }

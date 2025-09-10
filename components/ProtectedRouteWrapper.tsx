@@ -1,43 +1,52 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from './Providers/AuthProvider';
-import PageLoaderWrapper from './PageLoaderWrapper';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "./Providers/AuthProvider";
+import PageLoaderWrapper from "./PageLoaderWrapper";
 
 interface ProtectedRouteWrapperProps {
   children: React.ReactNode;
+  allowedRoles?: string[];
 }
 
-const ProtectedRouteWrapper: React.FC<ProtectedRouteWrapperProps> = ({ children }) => {
+const ProtectedRouteWrapper: React.FC<ProtectedRouteWrapperProps> = ({
+  children,
+  allowedRoles,
+}) => {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Set a cookie flag to indicate tokens might exist in localStorage
-    // This helps the middleware make better decisions
-    const accessToken = localStorage.getItem('accessToken');
-    const refreshToken = localStorage.getItem('refreshToken');
-    
-    if (accessToken || refreshToken) {
-      document.cookie = 'hasTokens=true; path=/';
-    } else {
-      document.cookie = 'hasTokens=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    }
-  }, [user]);
+    if (loading) return;
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
+    if (!isAuthenticated) {
+      router.replace("/login");
+      return;
     }
-  }, [loading, isAuthenticated, router]);
 
-  // Show loading while checking authentication or redirecting
-  if (loading || !isAuthenticated) {
-    return <PageLoaderWrapper loading={true}><div /></PageLoaderWrapper>;
+    if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+      if (user.role === "employee") {
+        router.replace("/employee-dashboard");
+      } else {
+        router.replace("/");
+      }
+      return;
+    }
+
+    // ✅ Passed all checks
+    setChecking(false);
+  }, [loading, isAuthenticated, allowedRoles, user, router]);
+
+  if (loading || checking) {
+    return (
+      <PageLoaderWrapper loading={true}>
+        <div />
+      </PageLoaderWrapper>
+    );
   }
 
-  // If authenticated, render the protected content
   return <>{children}</>;
 };
 

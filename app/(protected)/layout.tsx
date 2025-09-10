@@ -41,7 +41,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <ProtectedRouteWrapper>
+            <ProtectedRouteWrapper allowedRoles={["admin"]}>
               <SidebarProvider>
                 <AppSidebar />
                 <div className="w-full">
