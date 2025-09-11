@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MoreVertical } from "lucide-react";
+import { type DateRange } from "react-day-picker";
 
 interface Payment {
   name: string;
@@ -41,10 +42,10 @@ const formatAmount = (amount: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
 
 const formatDate = (timestamp: string) =>
-  new Date(timestamp).toLocaleDateString("en-IN", { 
-    day: "2-digit", 
-    month: "short", 
-    year: "numeric" 
+  new Date(timestamp).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
   });
 
 const getInitials = (name: string) => {
@@ -58,7 +59,7 @@ const getInitials = (name: string) => {
 const getAvatarColor = (name: string) => {
   const colors = [
     "bg-blue-500",
-    "bg-green-500", 
+    "bg-green-500",
     "bg-purple-500",
     "bg-pink-500",
     "bg-indigo-500",
@@ -76,12 +77,12 @@ const PaymentRow = ({ payment }: { payment: Payment }) => (
       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm ${getAvatarColor(payment.name)}`}>
         {getInitials(payment.name)}
       </div>
-      
+
       <div className="flex-1 min-w-0">
         <div className="font-semibold text-base leading-tight">
           {payment.name}
         </div>
-        <div className="text-sm mt-0.5">
+        <div className="text-sm m-0.5  text-gray-400">
           {payment.course_name}
         </div>
       </div>
@@ -92,23 +93,35 @@ const PaymentRow = ({ payment }: { payment: Payment }) => (
         <div className="font-semibold text-base">
           {formatAmount(payment.amount)}
         </div>
-        <div className="text-sm mt-0.5">
+        <div className="text-sm mt-0.5 text-gray-400">
           {formatDate(payment.timestamp)}
         </div>
       </div>
-      
+
       <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(payment.payment_status)}`}>
         {payment.payment_status}
       </div>
-      
-      
+
+
     </div>
   </div>
 );
 
-const PaymentTable = () => {
+interface PaymentTableProps {
+  selectedDateRange?: DateRange | undefined
+}
+
+const PaymentTable = ({ selectedDateRange }: PaymentTableProps) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to format date in local timezone (YYYY-MM-DD)
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -119,7 +132,7 @@ const PaymentTable = () => {
       return;
     }
 
-    fetch("http://localhost:5000/api/payment/todays-payments", {
+    fetch("http://localhost:5000/api/payment/myCounselor", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -131,7 +144,36 @@ const PaymentTable = () => {
         return res.json();
       })
       .then((data) => {
-        const sorted = data.sort(
+        // Filter data by selected date range if provided
+        let filteredData = data;
+        if (selectedDateRange?.from || selectedDateRange?.to) {
+          filteredData = data.filter((payment: Payment) => {
+            const paymentDate = new Date(payment.timestamp);
+
+            if (selectedDateRange.from && paymentDate < selectedDateRange.from) {
+              return false;
+            }
+
+            if (selectedDateRange.to) {
+              const endDate = new Date(selectedDateRange.to);
+              endDate.setHours(23, 59, 59, 999); // Include entire end date
+              if (paymentDate > endDate) {
+                return false;
+              }
+            }
+
+            return true;
+          });
+        } else {
+          // If no date range selected, show today's payments by default
+          const todayStr = formatDateLocal(new Date());
+          filteredData = data.filter((payment: Payment) => {
+            const paymentDateStr = formatDateLocal(new Date(payment.timestamp));
+            return paymentDateStr === todayStr;
+          });
+        }
+
+        const sorted = filteredData.sort(
           (a: Payment, b: Payment) =>
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
@@ -142,15 +184,35 @@ const PaymentTable = () => {
         console.error(err);
         setLoading(false);
       });
-  }, []);
+  }, [selectedDateRange]);
 
   return (
     <Card className="w-full h-full mx-auto">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Todays Payments</CardTitle>
+          <CardTitle>
+            {selectedDateRange?.from && selectedDateRange?.to
+              ? selectedDateRange.from.toDateString() ===
+                selectedDateRange.to.toDateString()
+                ? `Payments - ${selectedDateRange.from.toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}`
+                : `Payments - ${selectedDateRange.from.toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })} to ${selectedDateRange.to.toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}`
+              : "Today's Payments"}
+          </CardTitle>
+
         </div>
-        
+
       </CardHeader>
 
       <CardContent className="h-full overflow-y-auto p-6 space-y-0">

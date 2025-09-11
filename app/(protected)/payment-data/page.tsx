@@ -96,6 +96,8 @@ export default function Page() {
     state: 'all',
     minAmount: '',
     maxAmount: '',
+    startDate: '',
+    endDate: '',
   });
 
   // Filter options (will be populated from data)
@@ -230,6 +232,20 @@ export default function Page() {
       if (filters.minAmount && item.amount < parseFloat(filters.minAmount)) return false;
       if (filters.maxAmount && item.amount > parseFloat(filters.maxAmount)) return false;
       
+      // Date range filters
+      if (filters.startDate || filters.endDate) {
+        const itemDate = new Date(item.timestamp);
+        if (filters.startDate) {
+          const startDate = new Date(filters.startDate);
+          if (itemDate < startDate) return false;
+        }
+        if (filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999); // Include the entire end date
+          if (itemDate > endDate) return false;
+        }
+      }
+      
       return true;
     });
   }, [data, filters]);
@@ -247,6 +263,8 @@ export default function Page() {
       state: 'all',
       minAmount: '',
       maxAmount: '',
+      startDate: '',
+      endDate: '',
     });
   };
 
@@ -563,6 +581,25 @@ export default function Page() {
                   placeholder="Max amount"
                   value={filters.maxAmount}
                   onChange={(e) => setFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
+                />
+              </div>
+
+              {/* Date Range Filters */}
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
                 />
               </div>
             </div>

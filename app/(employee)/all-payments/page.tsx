@@ -14,7 +14,6 @@ import {
     VisibilityState,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -86,6 +85,7 @@ export default function Page() {
     const [showFilters, setShowFilters] = React.useState(false);
     const [filters, setFilters] = React.useState({
         course_type: 'all',
+        course_name: 'all',
         pay_option: 'all',
         payment_status: 'all',
         batch: 'all',
@@ -96,11 +96,14 @@ export default function Page() {
         state: 'all',
         minAmount: '',
         maxAmount: '',
+        startDate: '',
+        endDate: '',
     });
 
     // Filter options (will be populated from data)
     const [filterOptions, setFilterOptions] = React.useState({
         course_types: [] as string[],
+        course_names: [] as string[],
         pay_options: [] as string[],
         payment_statuses: [] as string[],
         batches: [] as string[],
@@ -163,6 +166,7 @@ export default function Page() {
                 // Extract unique values for filter options
                 const uniqueValues: {
                     course_types: string[];
+                    course_names: string[];
                     pay_options: string[];
                     payment_statuses: string[];
                     batches: string[];
@@ -173,6 +177,7 @@ export default function Page() {
                     states: string[];
                 } = {
                     course_types: [...new Set(users.map((u: any) => u.course_type).filter(Boolean))] as string[],
+                    course_names: [...new Set(users.map((u: any) => u.course_name).filter(Boolean))] as string[],
                     pay_options: [...new Set(users.map((u: any) => u.pay_option).filter(Boolean))] as string[],
                     payment_statuses: [...new Set(users.map((u: any) => u.payment_status).filter(Boolean))] as string[],
                     batches: [...new Set(users.map((u: any) => u.batch).filter(Boolean))] as string[],
@@ -193,6 +198,7 @@ export default function Page() {
         return data.filter((item) => {
             // Text filters
             if (filters.course_type !== 'all' && item.course_type !== filters.course_type) return false;
+            if (filters.course_name !== 'all' && item.course_name !== filters.course_name) return false;
             if (filters.pay_option !== 'all' && item.pay_option !== filters.pay_option) return false;
             if (filters.payment_status !== 'all' && item.payment_status !== filters.payment_status) return false;
             if (filters.batch !== 'all' && item.batch !== filters.batch) return false;
@@ -206,6 +212,20 @@ export default function Page() {
             if (filters.minAmount && item.amount < parseFloat(filters.minAmount)) return false;
             if (filters.maxAmount && item.amount > parseFloat(filters.maxAmount)) return false;
 
+            // Date range filters
+            if (filters.startDate || filters.endDate) {
+                const itemDate = new Date(item.timestamp);
+                if (filters.startDate) {
+                    const startDate = new Date(filters.startDate);
+                    if (itemDate < startDate) return false;
+                }
+                if (filters.endDate) {
+                    const endDate = new Date(filters.endDate);
+                    endDate.setHours(23, 59, 59, 999); // Include the entire end date
+                    if (itemDate > endDate) return false;
+                }
+            }
+
             return true;
         });
     }, [data, filters]);
@@ -213,6 +233,7 @@ export default function Page() {
     const clearFilters = () => {
         setFilters({
             course_type: 'all',
+            course_name: 'all',
             pay_option: 'all',
             payment_status: 'all',
             batch: 'all',
@@ -223,6 +244,8 @@ export default function Page() {
             state: 'all',
             minAmount: '',
             maxAmount: '',
+            startDate: '',
+            endDate: '',
         });
     };
 
@@ -369,6 +392,25 @@ export default function Page() {
                                 </Select>
                             </div>
 
+                            {/* Course Name Filter */}
+                            <div className="space-y-2">
+                                <Label>Course Name</Label>
+                                <Select
+                                    value={filters.course_name}
+                                    onValueChange={(value) => setFilters(prev => ({ ...prev, course_name: value }))}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select course name" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All</SelectItem>
+                                        {filterOptions.course_names.map((name) => (
+                                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             {/* Payment Option Filter */}
                             <div className="space-y-2">
                                 <Label>Payment Option</Label>
@@ -407,119 +449,7 @@ export default function Page() {
                                 </Select>
                             </div>
 
-                            {/* Batch Filter */}
-                            <div className="space-y-2">
-                                <Label>Batch</Label>
-                                <Select
-                                    value={filters.batch}
-                                    onValueChange={(value) => setFilters(prev => ({ ...prev, batch: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select batch" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        {filterOptions.batches.map((batch) => (
-                                            <SelectItem key={batch} value={batch}>{batch}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* College Filter */}
-                            <div className="space-y-2">
-                                <Label>College</Label>
-                                <Select
-                                    value={filters.college}
-                                    onValueChange={(value) => setFilters(prev => ({ ...prev, college: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select college" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        {filterOptions.colleges.map((college) => (
-                                            <SelectItem key={college} value={college}>{college}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Department Filter */}
-                            <div className="space-y-2">
-                                <Label>Department</Label>
-                                <Select
-                                    value={filters.department}
-                                    onValueChange={(value) => setFilters(prev => ({ ...prev, department: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select department" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        {filterOptions.departments.map((dept) => (
-                                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Year Filter */}
-                            <div className="space-y-2">
-                                <Label>Year</Label>
-                                <Select
-                                    value={filters.year}
-                                    onValueChange={(value) => setFilters(prev => ({ ...prev, year: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select year" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        {filterOptions.years.map((year) => (
-                                            <SelectItem key={year} value={year}>{year}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* City Filter */}
-                            <div className="space-y-2">
-                                <Label>City</Label>
-                                <Select
-                                    value={filters.city}
-                                    onValueChange={(value) => setFilters(prev => ({ ...prev, city: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select city" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        {filterOptions.cities.map((city) => (
-                                            <SelectItem key={city} value={city}>{city}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* State Filter */}
-                            <div className="space-y-2">
-                                <Label>State</Label>
-                                <Select
-                                    value={filters.state}
-                                    onValueChange={(value) => setFilters(prev => ({ ...prev, state: value }))}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select state" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        {filterOptions.states.map((state) => (
-                                            <SelectItem key={state} value={state}>{state}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            
 
                             {/* Amount Range Filters */}
                             <div className="space-y-2">
@@ -541,6 +471,25 @@ export default function Page() {
                                     onChange={(e) => setFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
                                 />
                             </div>
+
+                            {/* Date Range Filters */}
+                            <div className="space-y-2">
+                                <Label>Start Date</Label>
+                                <Input
+                                    type="date"
+                                    value={filters.startDate}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>End Date</Label>
+                                <Input
+                                    type="date"
+                                    value={filters.endDate}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -548,7 +497,7 @@ export default function Page() {
 
             {/* Table */}
             <div className="rounded-md border overflow-x-auto">
-                <Table className="table-fixed w-[200%]">
+                <Table className="table-fixed w-[160%]">
                     <TableHeader>
                         {table.getHeaderGroups().map((hg) => (
                             <TableRow key={hg.id}>
@@ -604,9 +553,6 @@ export default function Page() {
                     </TableBody>
                 </Table>
             </div>
-
-
-
         </div>
     );
 }

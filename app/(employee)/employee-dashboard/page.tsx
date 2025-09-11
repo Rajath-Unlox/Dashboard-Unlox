@@ -9,12 +9,14 @@ import ProtectedRouteWrapper from "@/components/ProtectedRouteWrapper"
 import { EmpAppSidebar } from "@/components/EmpAppSidebar"
 import { TotalPaymentCard } from "@/components/charts/TotalPaymentCard"
 import PaymentBreakdownCard from "@/components/charts/PaymentBreakdownCard"
+import { useState } from "react"
+import { type DateRange } from "react-day-picker"
 
 const page = () => {
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>(undefined)
+
   return (
     <>
-
-
       <div className="min-h-screen flex flex-col bg-background p-4 w-full"> {/* full height */}
         {/* Grid for 3 columns */}
         <div className="flex-1 h-full min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -22,24 +24,21 @@ const page = () => {
             <div className="w-full">
               <TotalPaymentCard />
             </div>
-              <PaymentStatsChart />
+            <PaymentStatsChart selectedDateRange={selectedDateRange} />
           </div>
           <div className="bg-card rounded-lg h-full flex flex-col p-2 space-y-2 w-full">
             <div className="w-full">
-              <CalendarChart />
+              <CalendarChart onDateRangeSelect={setSelectedDateRange} selectedDateRange={selectedDateRange} />
             </div>
             <div className="w-full">
-              <PaymentBreakdownCard />
+              <PaymentBreakdownCard selectedDateRange={selectedDateRange} />
             </div>
           </div>
           <div className="bg-card rounded-lg h-full flex flex-col p-2 space-y-2 w-full">
-            <PaymentTable />
-            
-          </div>
-
+            <PaymentTable selectedDateRange={selectedDateRange} />
+{}          </div>
         </div>
       </div>
-
     </>
   )
 }
