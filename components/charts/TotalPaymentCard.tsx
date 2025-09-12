@@ -47,7 +47,7 @@ export function TotalPaymentCard() {
   }, [])
 
   return (
-    <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
+    <Card className=" border shadow-sm">
       <CardContent>
         
         <CardTitle className="text-sm font-medium dark:text-slate-400">
