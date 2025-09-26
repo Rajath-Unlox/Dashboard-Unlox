@@ -9,6 +9,7 @@ import {
   Search,
   Settings,
   ShieldAlert,
+  Truck,
   Users,
 } from "lucide-react";
 import Logo from "@/public/images/Logo.png";
@@ -55,6 +56,11 @@ const items = [
     title: "System Logs",
     url: "/logs-data",
     icon: Logs,
+  },
+    {
+    title: "Edulet Track",
+    url: "/edulet-track",
+    icon: Truck,
   },
 ];
 
